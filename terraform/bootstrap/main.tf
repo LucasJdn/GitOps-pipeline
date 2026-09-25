@@ -98,7 +98,6 @@ resource "aws_iam_openid_connect_provider" "github_actions" {
 resource "aws_iam_role" "github_actions" {
   name = "${var.project_name}-github-actions-oidc-role"
 
-  # Trust Policy: define quem pode assumir a role via Web Identity
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -116,6 +115,101 @@ resource "aws_iam_role" "github_actions" {
             "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:ref:refs/heads/main"
           }
         }
+      }
+    ]
+  })
+}
+
+# ------------------------------------------------------------------------------
+# IAM Policy (Permissões do Pipeline CI/CD)
+# ------------------------------------------------------------------------------
+
+resource "aws_iam_role_policy" "github_actions_permissions" {
+  name = "${var.project_name}-github-actions-policy"
+  role = aws_iam_role.github_actions.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:PutImage",
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart",
+          "ecr:CompleteLayerUpload",
+          "ecr:DescribeRepositories",
+          "ecr:CreateRepository",
+          "ecr:DeleteRepository",
+          "ecr:TagResource"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["ecs:*"]
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["codedeploy:*"]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:ListBucket",
+          "s3:GetBucketVersioning"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:DescribeTable"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["cloudwatch:*", "logs:*", "sns:*"]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "iam:PassRole",
+          "iam:GetRole",
+          "iam:CreateRole",
+          "iam:DeleteRole",
+          "iam:AttachRolePolicy",
+          "iam:DetachRolePolicy",
+          "iam:PutRolePolicy",
+          "iam:DeleteRolePolicy",
+          "iam:TagRole",
+          "iam:GetRolePolicy"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:*",
+          "elasticloadbalancing:*",
+          "application-autoscaling:*",
+          "autoscaling:*"
+        ]
+        Resource = "*"
       }
     ]
   })
