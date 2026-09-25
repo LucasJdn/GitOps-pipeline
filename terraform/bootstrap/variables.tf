@@ -11,9 +11,13 @@ variable "project_name" {
 }
 
 variable "github_repo" {
-    
+    description = "Github Repository"
+    type = string
+    default = "LucasJdn/GitOps-pipeline"
 }
 
 variable "environment" {
+    description = "Environment"
+    type = string
     default = "production"
 }
