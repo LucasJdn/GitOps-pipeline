@@ -125,7 +125,6 @@ This project provides an enterprise-grade reference architecture for modern cont
   - [x] IAM Role with scoped repository Trust Policy (`main.tf`)
   - [x] IAM Permission Policy for CI/CD actions (`main.tf`)
   - [x] Bootstrap Output variables (`outputs.tf`)
-  - [ ] Execute bootstrap provisioning (`terraform apply`)
 
 - [ ] **Sprint 2: Network, Security & Registry Modules**
   - [ ] Module `network`: VPC `10.5.0.0/16`, 2 AZs, Public/Private subnets, NAT Gateways
