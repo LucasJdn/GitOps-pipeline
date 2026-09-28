@@ -124,7 +124,7 @@ This project provides an enterprise-grade reference architecture for modern cont
   - [x] IAM OpenID Connect (OIDC) Identity Provider for GitHub Actions (`main.tf`)
   - [x] IAM Role with scoped repository Trust Policy (`main.tf`)
   - [x] IAM Permission Policy for CI/CD actions (`main.tf`)
-  - [ ] Bootstrap Output variables (`outputs.tf`)
+  - [x] Bootstrap Output variables (`outputs.tf`)
   - [ ] Execute bootstrap provisioning (`terraform apply`)
 
 - [ ] **Sprint 2: Network, Security & Registry Modules**
