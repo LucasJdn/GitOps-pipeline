@@ -243,3 +243,28 @@ resource "aws_route_table" "public" {
     Name = "${var.project_name}-public-route-table"
   }
 }
+
+resource "aws_subnet_route_table_association" "public_a" {
+  subnet_id      = aws_subnet.public_a.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_subnet_route_table_association" "public_b" {
+  subnet_id      = aws_subnet.public_b.id
+  route_table_id = aws_route_table.public.id
+}
+
+# ------------------------------------------------------------------------------
+# Elastic IP and NAT Gateway
+# ------------------------------------------------------------------------------
+
+resource "aws_eip" "nat_a" {
+  domain = "vpc"
+
+  tags = {
+    Name = "${var.project_name}-nat-a-eip"
+  }
+
+  depends_on = [aws_internet_gateway.main]
+}
+

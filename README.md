@@ -127,7 +127,7 @@ This project provides an enterprise-grade reference architecture for modern cont
   - [x] Bootstrap Output variables (`outputs.tf`)
 
 - [ ] **Sprint 2: Network, Security & Registry Modules**
-  - [ ] Module `network`: VPC `10.5.0.0/16`, 2 AZs, Public/Private subnets, NAT Gateways
+  - [x] Module `network`: VPC `10.5.0.0/16`, 2 AZs, Public/Private subnets, NAT Gateways
   - [ ] Module `security`: Security Groups for ALB (80/8080) and ECS Tasks (3000)
   - [ ] Module `ecr`: Private repository, image scanning on push, lifecycle retention rules
 
