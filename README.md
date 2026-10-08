@@ -128,7 +128,7 @@ This project provides an enterprise-grade reference architecture for modern cont
 
 - [ ] **Sprint 2: Network, Security & Registry Modules**
   - [x] Module `network`: VPC `10.5.0.0/16`, 2 AZs, Public/Private subnets, NAT Gateways
-  - [ ] Module `security`: Security Groups for ALB (80/8080) and ECS Tasks (3000)
+  - [x] Module `security`: Security Groups for ALB (80/8080) and ECS Tasks (3000)
   - [ ] Module `ecr`: Private repository, image scanning on push, lifecycle retention rules
 
 - [ ] **Sprint 3: Ingress, Runtime & CodeDeploy Modules**
