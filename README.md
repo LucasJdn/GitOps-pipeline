@@ -126,13 +126,13 @@ This project provides an enterprise-grade reference architecture for modern cont
   - [x] IAM Permission Policy for CI/CD actions (`main.tf`)
   - [x] Bootstrap Output variables (`outputs.tf`)
 
-- [ ] **Sprint 2: Network, Security & Registry Modules**
+- [x] **Sprint 2: Network, Security & Registry Modules**
   - [x] Module `network`: VPC `10.5.0.0/16`, 2 AZs, Public/Private subnets, NAT Gateways
   - [x] Module `security`: Security Groups for ALB (80/8080) and ECS Tasks (3000)
   - [x] Module `ecr`: Private repository, image scanning on push, lifecycle retention rules
 
 - [ ] **Sprint 3: Ingress, Runtime & CodeDeploy Modules**
-  - [ ] Module `alb`: ALB, Target Groups (Blue & Green), Listeners (80 & 8080)
+  - [x] Module `alb`: ALB, Target Groups (Blue & Green), Listeners (80 & 8080)
   - [ ] Module `ecs`: Fargate Cluster, Task Definition (512 CPU / 1GB RAM), Service
   - [ ] Module `codedeploy`: Application, Deployment Group, traffic routing configuration
 
