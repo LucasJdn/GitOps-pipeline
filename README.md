@@ -133,7 +133,7 @@ This project provides an enterprise-grade reference architecture for modern cont
 
 - [ ] **Sprint 3: Ingress, Runtime & CodeDeploy Modules**
   - [x] Module `alb`: ALB, Target Groups (Blue & Green), Listeners (80 & 8080)
-  - [ ] Module `ecs`: Fargate Cluster, Task Definition (512 CPU / 1GB RAM), Service
+  - [x] Module `ecs`: Fargate Cluster, Task Definition (512 CPU / 1GB RAM), Service
   - [ ] Module `codedeploy`: Application, Deployment Group, traffic routing configuration
 
 - [ ] **Sprint 4: Scalability, Monitoring & Alerts**
