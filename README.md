@@ -131,10 +131,10 @@ This project provides an enterprise-grade reference architecture for modern cont
   - [x] Module `security`: Security Groups for ALB (80/8080) and ECS Tasks (3000)
   - [x] Module `ecr`: Private repository, image scanning on push, lifecycle retention rules
 
-- [ ] **Sprint 3: Ingress, Runtime & CodeDeploy Modules**
+- [x] **Sprint 3: Ingress, Runtime & CodeDeploy Modules**
   - [x] Module `alb`: ALB, Target Groups (Blue & Green), Listeners (80 & 8080)
   - [x] Module `ecs`: Fargate Cluster, Task Definition (512 CPU / 1GB RAM), Service
-  - [ ] Module `codedeploy`: Application, Deployment Group, traffic routing configuration
+  - [x] Module `codedeploy`: Application, Deployment Group, traffic routing configuration
 
 - [ ] **Sprint 4: Scalability, Monitoring & Alerts**
   - [ ] Module `autoscaling`: ECS Target Tracking (60% CPU utilization, 2-8 tasks)
