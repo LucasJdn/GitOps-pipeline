@@ -141,9 +141,9 @@ This project provides an enterprise-grade reference architecture for modern cont
   - [x] Module `monitoring`: CloudWatch Alarms (High CPU, Memory, ALB 5xx errors)
   - [x] Module `notifications`: SNS Topic, email subscription, CodeDeploy triggers
 
-- [ ] **Sprint 5: Microservice Demo Application**
-  - [ ] Express.js application (`server.js`) with `/` and `/health` endpoints
-  - [ ] Production-ready multi-stage `Dockerfile`
+- [x] **Sprint 5: Microservice Demo Application**
+  - [x] Express.js application (`server.js`) with `/` and `/health` endpoints
+  - [x] Production-ready multi-stage `Dockerfile`
 
 - [ ] **Sprint 6: GitHub Actions Workflows**
   - [ ] `.github/workflows/deploy.yml`: OIDC login, build, test, terraform apply, deploy

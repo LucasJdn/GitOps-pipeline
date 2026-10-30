@@ -1,0 +1,22 @@
+{
+  "name": "gitops-ecs-microservice",
+  "version": "1.0.0",
+  "description": "Production-ready Node.js Express REST API for ECS Fargate Blue/Green GitOps pipeline",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "ecs",
+    "fargate",
+    "gitops"
+  ],
+  "author": "LucasJdn",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

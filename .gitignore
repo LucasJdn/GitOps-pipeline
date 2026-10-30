@@ -14,3 +14,7 @@ override.tf.json
 
 !example.tfvars
 !terraform.tfvars.example
+
+# Node.js
+node_modules/
+npm-debug.log*
