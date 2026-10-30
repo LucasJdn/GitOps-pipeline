@@ -37,3 +37,18 @@ output "test_listener_arn" {
   description = "The ARN of the test listener"
   value       = aws_lb_listener.test.arn
 }
+
+output "alb_arn_suffix" {
+  description = "The ARN suffix of the ALB for CloudWatch metrics"
+  value       = aws_lb.main.arn_suffix
+}
+
+output "blue_target_group_arn_suffix" {
+  description = "The ARN suffix of the blue target group for CloudWatch metrics"
+  value       = aws_lb_target_group.blue.arn_suffix
+}
+
+output "green_target_group_arn_suffix" {
+  description = "The ARN suffix of the green target group for CloudWatch metrics"
+  value       = aws_lb_target_group.green.arn_suffix
+}

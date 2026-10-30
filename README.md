@@ -138,7 +138,7 @@ This project provides an enterprise-grade reference architecture for modern cont
 
 - [ ] **Sprint 4: Scalability, Monitoring & Alerts**
   - [x] Module `autoscaling`: ECS Target Tracking (60% CPU utilization, 2-8 tasks)
-  - [ ] Module `monitoring`: CloudWatch Alarms (High CPU, Memory, ALB 5xx errors)
+  - [x] Module `monitoring`: CloudWatch Alarms (High CPU, Memory, ALB 5xx errors)
   - [ ] Module `notifications`: SNS Topic, email subscription, CodeDeploy triggers
 
 - [ ] **Sprint 5: Microservice Demo Application**
