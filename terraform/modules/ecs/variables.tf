@@ -64,6 +64,12 @@ variable "desired_count" {
   default     = 2
 }
 
+variable "health_check_grace_period_seconds" {
+  description = "Seconds ECS ignores failing ALB health checks after a task starts"
+  type        = number
+  default     = 60
+}
+
 variable "log_retention_days" {
   description = "Retention period in days for CloudWatch log events"
   type        = number

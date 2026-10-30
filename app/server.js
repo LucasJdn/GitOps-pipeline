@@ -49,25 +49,34 @@ app.use((req, res) => {
 });
 
 // Graceful shutdown handling
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`[${new Date().toISOString()}] Server running on port ${PORT} (env: ${ENVIRONMENT}, version: ${APP_VERSION})`);
-});
-
-const handleShutdown = (signal) => {
-  console.log(`[${new Date().toISOString()}] Received ${signal}. Gracefully closing HTTP server...`);
-  server.close(() => {
-    console.log(`[${new Date().toISOString()}] HTTP server closed. Exiting process.`);
-    process.exit(0);
+const startServer = () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`[${new Date().toISOString()}] Server running on port ${PORT} (env: ${ENVIRONMENT}, version: ${APP_VERSION})`);
   });
 
-  // Force shutdown after 10 seconds timeout if open connections stall
-  setTimeout(() => {
-    console.error(`[${new Date().toISOString()}] Forcefully shutting down after timeout.`);
-    process.exit(1);
-  }, 10000);
+  const handleShutdown = (signal) => {
+    console.log(`[${new Date().toISOString()}] Received ${signal}. Gracefully closing HTTP server...`);
+    server.close(() => {
+      console.log(`[${new Date().toISOString()}] HTTP server closed. Exiting process.`);
+      process.exit(0);
+    });
+
+    // Force shutdown after 10 seconds timeout if open connections stall
+    setTimeout(() => {
+      console.error(`[${new Date().toISOString()}] Forcefully shutting down after timeout.`);
+      process.exit(1);
+    }, 10000);
+  };
+
+  process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+  process.on('SIGINT', () => handleShutdown('SIGINT'));
+
+  return server;
 };
 
-process.on('SIGTERM', () => handleShutdown('SIGTERM'));
-process.on('SIGINT', () => handleShutdown('SIGINT'));
+// Only bind the port when executed directly (`node server.js`), not when imported by tests
+if (require.main === module) {
+  startServer();
+}
 
 module.exports = app;

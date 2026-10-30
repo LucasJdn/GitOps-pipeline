@@ -59,7 +59,7 @@ module "ecs" {
   private_subnets       = module.network.private_subnets
   ecs_security_group_id = module.security.ecs_sg_id
   target_group_arn      = module.alb.blue_target_group_arn
-  container_image       = var.container_image != "public.ecr.aws/docker/library/httpd:alpine" ? var.container_image : "${module.ecr.repository_url}:latest"
+  container_image       = coalesce(var.container_image, "${module.ecr.repository_url}:latest")
   container_port        = var.container_port
 
   environment_variables = [
@@ -72,6 +72,9 @@ module "ecs" {
       value = tostring(var.container_port)
     }
   ]
+
+  # The target group must be attached to an ALB listener before the service is created
+  depends_on = [module.alb]
 }
 
 # ------------------------------------------------------------------------------

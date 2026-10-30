@@ -17,12 +17,14 @@ resource "aws_lb_target_group" "blue" {
   vpc_id      = var.vpc_id
   target_type = "ip"
 
+  deregistration_delay = 30
+
   health_check {
     path                = "/health"
     healthy_threshold   = 2
-    unhealthy_threshold = 10
-    timeout             = 60
-    interval            = 300
+    unhealthy_threshold = 3
+    timeout             = 5
+    interval            = 15
     matcher             = "200"
   }
 
@@ -38,12 +40,14 @@ resource "aws_lb_target_group" "green" {
   vpc_id      = var.vpc_id
   target_type = "ip"
 
+  deregistration_delay = 30
+
   health_check {
     path                = "/health"
     healthy_threshold   = 2
-    unhealthy_threshold = 10
-    timeout             = 60
-    interval            = 300
+    unhealthy_threshold = 3
+    timeout             = 5
+    interval            = 15
     matcher             = "200"
   }
 

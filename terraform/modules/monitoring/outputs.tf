@@ -49,10 +49,8 @@ output "alb_green_5xx_errors_alarm_name" {
 }
 
 output "codedeploy_rollback_alarm_names" {
-  description = "List of CloudWatch alarm names suitable for CodeDeploy automatic rollback configuration"
+  description = "Alarm names used for CodeDeploy automatic rollback (5xx errors only; CPU/memory alarms notify via SNS without reverting deploys)"
   value = [
-    aws_cloudwatch_metric_alarm.ecs_cpu_high.alarm_name,
-    aws_cloudwatch_metric_alarm.ecs_memory_high.alarm_name,
     aws_cloudwatch_metric_alarm.alb_5xx_errors.alarm_name,
     aws_cloudwatch_metric_alarm.alb_green_5xx_errors.alarm_name
   ]

@@ -14,7 +14,7 @@ A production-ready, open-source GitOps infrastructure and CI/CD delivery pipelin
 - [Overview](#-overview)
 - [Architecture & Workflow](#-architecture--workflow)
 - [Tech Stack](#-tech-stack)
-- [Project Scope](#-project-scope)
+- [Known Limitations](#-known-limitations)
 - [Implementation Progress](#-implementation-progress)
 - [Repository Structure](#-repository-structure)
 - [Architecture Decisions & FAQ](#-architecture-decisions--faq)
@@ -116,6 +116,17 @@ This project provides an enterprise-grade reference architecture for modern cont
 
 ---
 
+## ⚠️ Known Limitations
+
+This is a study/reference project. Before using it in production, consider:
+- **HTTP only:** the ALB exposes listeners on `80` (prod) and `8080` (test) without TLS. Production use needs an ACM certificate, an HTTPS listener and a domain.
+- **Broad CI/CD permissions:** the GitHub Actions role uses wildcard resources (`ecs:*`, `ec2:*`, ...) for simplicity. Scope them down for real workloads.
+- **Rollback signal:** automatic rollback is driven by ALB 5xx alarms. CPU/memory alarms only notify through SNS.
+- **Local bootstrap state:** `terraform/bootstrap` stores its own state locally because it creates the remote backend.
+
+
+---
+
 ## 📊 Implementation Progress
 
 ### Sprint Breakdown
@@ -165,14 +176,17 @@ This project provides an enterprise-grade reference architecture for modern cont
 │       └── destroy.yml            # Manual teardown workflow
 ├── app/
 │   ├── server.js                  # Express.js REST application
+│   ├── server.test.js             # Tests (node:test)
 │   ├── package.json               # Dependencies and scripts
+│   ├── package-lock.json          # Locked dependency tree
+│   ├── .dockerignore              # Docker build context exclusions
 │   └── Dockerfile                 # Container image specification
 ├── terraform/
 │   ├── bootstrap/                 # One-time bootstrap (S3, DynamoDB, OIDC)
 │   │   ├── main.tf
 │   │   ├── variables.tf
 │   │   └── outputs.tf
-│   ├── modules/
+│   ├── modules/                   # Each module: main.tf, variables.tf, outputs.tf
 │   │   ├── network/               # VPC, Subnets, Gateways, Routes
 │   │   ├── security/              # Security Groups
 │   │   ├── ecr/                   # Container Registry & Lifecycle
@@ -189,6 +203,8 @@ This project provides an enterprise-grade reference architecture for modern cont
 │   └── terraform.tfvars.example   # Example variable overrides
 ├── scripts/
 │   └── create_deployment.sh       # CodeDeploy helper deployment script
+├── architecture.png               # Architecture diagram
+├── LICENSE                        # MIT License
 ├── README.md                      # Comprehensive project documentation
 └── .gitignore                     # Git ignore rules
 ```
@@ -254,6 +270,8 @@ Note the values output by Terraform:
 - `terraform_state_bucket`
 - `terraform_lock_table`
 - `github_actions_role_arn`
+
+> If you applied the bootstrap before, run `terraform apply` again: the IAM policy and the OIDC trust relationship (now accepting `pull_request` tokens) were updated.
 
 ### 2. Configure GitHub Secrets
 In your GitHub repository, navigate to **Settings > Secrets and variables > Actions** and create:

@@ -23,9 +23,9 @@ variable "vpc_cidr" {
 }
 
 variable "container_image" {
-  description = "Container image URI for ECS task definition (defaults to placeholder before first build)"
+  description = "Container image URI for the ECS task definition. When null, uses '<ecr_repository_url>:latest'"
   type        = string
-  default     = "public.ecr.aws/docker/library/httpd:alpine"
+  default     = null
 }
 
 variable "container_port" {

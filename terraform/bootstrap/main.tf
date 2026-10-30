@@ -86,8 +86,8 @@ resource "aws_dynamodb_table" "terraform_lock" {
 # ------------------------------------------------------------------------------
 
 resource "aws_iam_openid_connect_provider" "github_actions" {
-  url = "https://token.actions.githubusercontent.com"
-  client_id_list = ["sts.amazonaws.com"]
+  url             = "https://token.actions.githubusercontent.com"
+  client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
 }
 
@@ -112,7 +112,10 @@ resource "aws_iam_role" "github_actions" {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
           StringLike = {
-            "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:ref:refs/heads/main"
+            "token.actions.githubusercontent.com:sub" = [
+              "repo:${var.github_repo}:ref:refs/heads/main",
+              "repo:${var.github_repo}:pull_request"
+            ]
           }
         }
       }
@@ -145,7 +148,17 @@ resource "aws_iam_role_policy" "github_actions_permissions" {
           "ecr:DescribeRepositories",
           "ecr:CreateRepository",
           "ecr:DeleteRepository",
-          "ecr:TagResource"
+          "ecr:TagResource",
+          "ecr:UntagResource",
+          "ecr:ListTagsForResource",
+          "ecr:PutLifecyclePolicy",
+          "ecr:GetLifecyclePolicy",
+          "ecr:DeleteLifecyclePolicy",
+          "ecr:PutImageScanningConfiguration",
+          "ecr:PutImageTagMutability",
+          "ecr:BatchDeleteImage",
+          "ecr:ListImages",
+          "ecr:DescribeImages"
         ]
         Resource = "*"
       },
@@ -197,7 +210,13 @@ resource "aws_iam_role_policy" "github_actions_permissions" {
           "iam:PutRolePolicy",
           "iam:DeleteRolePolicy",
           "iam:TagRole",
-          "iam:GetRolePolicy"
+          "iam:GetRolePolicy",
+          "iam:ListRolePolicies",
+          "iam:ListAttachedRolePolicies",
+          "iam:ListInstanceProfilesForRole",
+          "iam:UntagRole",
+          "iam:UpdateAssumeRolePolicy",
+          "iam:CreateServiceLinkedRole"
         ]
         Resource = "*"
       },

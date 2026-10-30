@@ -143,6 +143,8 @@ resource "aws_ecs_service" "main" {
   launch_type      = "FARGATE"
   platform_version = "LATEST"
 
+  health_check_grace_period_seconds = var.health_check_grace_period_seconds
+
   network_configuration {
     subnets          = var.private_subnets
     security_groups  = [var.ecs_security_group_id]
