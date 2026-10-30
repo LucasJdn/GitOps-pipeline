@@ -1,0 +1,6 @@
+aws_region     = "us-east-1"
+project_name   = "project05"
+environment    = "production"
+vpc_cidr       = "10.5.0.0/16"
+container_port = 3000
+# alert_email  = "admin@example.com"

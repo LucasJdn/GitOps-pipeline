@@ -1,0 +1,61 @@
+name: Destroy Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type "DESTROY-PRODUCTION" to confirm destruction of all cloud infrastructure'
+        required: true
+        default: ''
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  PROJECT_NAME: project05
+  ENVIRONMENT: production
+
+jobs:
+  destroy:
+    name: Teardown Cloud Infrastructure
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - name: Validate Confirmation Input
+        run: |
+          if [ "${{ github.event.inputs.confirmation }}" != "DESTROY-PRODUCTION" ]; then
+            echo "❌ Confirmation failed. Expected 'DESTROY-PRODUCTION' but received '${{ github.event.inputs.confirmation }}'."
+            exit 1
+          fi
+          echo "⚠️ Confirmation verified. Proceeding with teardown..."
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC - Keyless)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.5
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=${{ env.ENVIRONMENT }}/terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE }}"
+
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve

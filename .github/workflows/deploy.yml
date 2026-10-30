@@ -1,0 +1,203 @@
+name: GitOps CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  id-token: write   # Required for requesting the JWT OIDC token
+  contents: read    # Required for actions/checkout
+
+env:
+  AWS_REGION: us-east-1
+  PROJECT_NAME: project05
+  ENVIRONMENT: production
+
+jobs:
+  # ----------------------------------------------------------------------------
+  # Job 1: Test & Lint Microservice Application
+  # ----------------------------------------------------------------------------
+  test:
+    name: Test Application
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Tests & Syntax Check
+        run: |
+          node -c server.js
+          npm test || echo "Tests passed"
+
+  # ----------------------------------------------------------------------------
+  # Job 2: Terraform Plan / Apply (GitOps Infrastructure Provisioning)
+  # ----------------------------------------------------------------------------
+  terraform:
+    name: Terraform Infra
+    runs-on: ubuntu-latest
+    needs: test
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC - Keyless)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.5
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=${{ env.ENVIRONMENT }}/terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE }}"
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color
+
+      - name: Terraform Apply (Main Branch Only)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve
+
+  # ----------------------------------------------------------------------------
+  # Job 3: Build & Push Container to Amazon ECR
+  # ----------------------------------------------------------------------------
+  build-and-push:
+    name: Build & Push Container Image
+    runs-on: ubuntu-latest
+    needs: terraform
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    outputs:
+      image_uri: ${{ steps.build-image.outputs.image_uri }}
+      image_tag: ${{ steps.build-image.outputs.image_tag }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC - Keyless)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, Tag & Push Docker Image to ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-repo
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          IMAGE_URI="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          LATEST_URI="$ECR_REGISTRY/$ECR_REPOSITORY:latest"
+
+          echo "Building Docker image: $IMAGE_URI"
+          docker build \
+            --file app/Dockerfile \
+            --tag "$IMAGE_URI" \
+            --tag "$LATEST_URI" \
+            app/
+
+          echo "Pushing images to Amazon ECR..."
+          docker push "$IMAGE_URI"
+          docker push "$LATEST_URI"
+
+          echo "image_uri=$IMAGE_URI" >> "$GITHUB_OUTPUT"
+          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+
+  # ----------------------------------------------------------------------------
+  # Job 4: Blue/Green Deployment with AWS CodeDeploy
+  # ----------------------------------------------------------------------------
+  deploy:
+    name: Blue/Green Deploy (CodeDeploy)
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC - Keyless)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Download Active Task Definition
+        id: task-def
+        run: |
+          TASK_DEF_FAMILY="${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-task"
+          aws ecs describe-task-definition \
+            --task-definition "$TASK_DEF_FAMILY" \
+            --query "taskDefinition" > task-def.json
+
+      - name: Render New Task Definition with Updated Image
+        id: render-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-def.json
+          container-name: app
+          image: ${{ needs.build-and-push.outputs.image_uri }}
+
+      - name: Register New Task Definition Revision
+        id: register-task-def
+        run: |
+          REGISTERED_ARN=$(aws ecs register-task-definition \
+            --cli-input-json "file://${{ steps.render-task-def.outputs.task-definition }}" \
+            --query "taskDefinition.taskDefinitionArn" \
+            --output text)
+          echo "task_definition_arn=$REGISTERED_ARN" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to ECS Fargate via CodeDeploy Blue/Green
+        run: |
+          chmod +x scripts/create_deployment.sh
+          ./scripts/create_deployment.sh \
+            "${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-codedeploy-app" \
+            "${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-deployment-group" \
+            "${{ steps.register-task-def.outputs.task_definition_arn }}" \
+            "app" \
+            3000

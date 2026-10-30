@@ -145,9 +145,9 @@ This project provides an enterprise-grade reference architecture for modern cont
   - [x] Express.js application (`server.js`) with `/` and `/health` endpoints
   - [x] Production-ready multi-stage `Dockerfile`
 
-- [ ] **Sprint 6: GitHub Actions Workflows**
-  - [ ] `.github/workflows/deploy.yml`: OIDC login, build, test, terraform apply, deploy
-  - [ ] `.github/workflows/destroy.yml`: Safe manual teardown workflow
+- [x] **Sprint 6: GitHub Actions Workflows**
+  - [x] `.github/workflows/deploy.yml`: OIDC login, build, test, terraform apply, deploy
+  - [x] `.github/workflows/destroy.yml`: Safe manual teardown workflow
 
 ---
 
