@@ -30,6 +30,30 @@ provider "aws" {
 data "aws_caller_identity" "current" {}
 
 # ------------------------------------------------------------------------------
+# OIDC Subject Patterns
+#
+# GitHub stamps the numeric owner/repository IDs onto the `sub` claim, which
+# makes it stable across renames and transfers:
+#
+#   repo:<owner>@<owner_id>/<repo>@<repo_id>:ref:refs/heads/main
+#   repo:<owner>@<owner_id>/<repo>@<repo_id>:pull_request
+#
+# The legacy `repo:<owner>/<repo>:<context>` form is kept as well because both
+# formats can be issued while the rollout progresses.
+# ------------------------------------------------------------------------------
+
+locals {
+  github_repo_parts = split("/", var.github_repo)
+  github_owner      = local.github_repo_parts[0]
+  github_repo_name  = local.github_repo_parts[1]
+
+  github_subject_claims = [
+    "repo:${local.github_owner}@${var.github_owner_id}/${local.github_repo_name}@${var.github_repo_id}:*",
+    "repo:${local.github_owner}/${local.github_repo_name}:*",
+  ]
+}
+
+# ------------------------------------------------------------------------------
 # Remote State Storage S3
 # ------------------------------------------------------------------------------
 
@@ -115,12 +139,7 @@ resource "aws_iam_role" "github_actions" {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
           StringLike = {
-            "token.actions.githubusercontent.com:sub" = [
-              "repo:${var.github_repo}:*",
-              "repo:lucasjdn/gitops-pipeline:*",
-              "repo:LucasJdn/gitops-pipeline:*",
-              "repo:lucasjdn/GitOps-pipeline:*"
-            ]
+            "token.actions.githubusercontent.com:sub" = local.github_subject_claims
           }
         }
       }

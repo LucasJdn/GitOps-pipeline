@@ -11,9 +11,21 @@ variable "project_name" {
 }
 
 variable "github_repo" {
-  description = "Github Repository"
+  description = "Github Repository in the <owner>/<repository> form"
   type        = string
   default     = "LucasJdn/GitOps-pipeline"
+}
+
+variable "github_owner_id" {
+  description = "Numeric GitHub ID of the repository owner (immutable OIDC sub claim)"
+  type        = number
+  default     = 118925207
+}
+
+variable "github_repo_id" {
+  description = "Numeric GitHub ID of the repository (immutable OIDC sub claim)"
+  type        = number
+  default     = 1387526148
 }
 
 variable "environment" {
