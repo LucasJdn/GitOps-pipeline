@@ -66,6 +66,9 @@ jobs:
     name: Terraform & Image
     runs-on: ubuntu-latest
     needs: test
+    permissions:
+      id-token: write
+      contents: read
     outputs:
       image_uri: ${{ steps.build-image.outputs.image_uri }}
 
@@ -78,7 +81,6 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          audience: sts.amazonaws.com
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -151,6 +153,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: terraform
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - name: Checkout Code
@@ -161,7 +166,6 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          audience: sts.amazonaws.com
 
       # describe-task-definition returns read-only fields that register-task-definition
       # rejects, so they are stripped before rendering the new revision.
