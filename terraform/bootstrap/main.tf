@@ -86,9 +86,12 @@ resource "aws_dynamodb_table" "terraform_lock" {
 # ------------------------------------------------------------------------------
 
 resource "aws_iam_openid_connect_provider" "github_actions" {
-  url             = "https://token.actions.githubusercontent.com"
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
+  url            = "https://token.actions.githubusercontent.com"
+  client_id_list = ["sts.amazonaws.com"]
+  thumbprint_list = [
+    "6938fd4d98bab03faadb97b34396831e3780aea1",
+    "1c58a3a8518e8759bf075b76b750d4f8d704f620"
+  ]
 }
 
 # ------------------------------------------------------------------------------
@@ -113,8 +116,10 @@ resource "aws_iam_role" "github_actions" {
           }
           StringLike = {
             "token.actions.githubusercontent.com:sub" = [
-              "repo:${var.github_repo}:ref:refs/heads/main",
-              "repo:${var.github_repo}:pull_request"
+              "repo:${var.github_repo}:*",
+              "repo:lucasjdn/gitops-pipeline:*",
+              "repo:LucasJdn/gitops-pipeline:*",
+              "repo:lucasjdn/GitOps-pipeline:*"
             ]
           }
         }
