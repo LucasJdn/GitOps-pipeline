@@ -164,7 +164,12 @@ resource "aws_ecs_service" "main" {
   lifecycle {
     ignore_changes = [
       task_definition,
-      load_balancer
+      load_balancer,
+      # ECS normalises "LATEST" to a concrete platform version (e.g. "1.4.0")
+      # and returns that on read, creating a permanent diff. It also cannot be
+      # updated in place on a service with the CODE_DEPLOY controller ("Use AWS
+      # CodeDeploy to trigger a new deployment"), so Terraform must not own it.
+      platform_version,
     ]
   }
 
