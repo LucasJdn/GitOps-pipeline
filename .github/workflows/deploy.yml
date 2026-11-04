@@ -199,10 +199,13 @@ jobs:
 
       # describe-task-definition returns read-only fields that register-task-definition
       # rejects, so they are stripped before rendering the new revision.
+      # `set -o pipefail` is required: without it a failing `aws` call is masked by
+      # jq's exit status and the step "succeeds" with an empty file.
       - name: Download Active Task Definition
         run: |
+          set -euo pipefail
           aws ecs describe-task-definition \
-            --task-definition "${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-task" \
+            --task-definition "${PROJECT_NAME}-${ENVIRONMENT}-task" \
             --query "taskDefinition" \
           | jq 'del(
               .taskDefinitionArn,
@@ -213,6 +216,7 @@ jobs:
               .registeredAt,
               .registeredBy
             )' > task-def.json
+          test -s task-def.json || { echo "::error::task-def.json is empty"; exit 1; }
 
       - name: Render New Task Definition with Updated Image
         id: render-task-def

@@ -469,11 +469,20 @@ resource "aws_iam_role_policy" "github_actions_deploy_permissions" {
         Sid    = "RegisterTaskDefinitionRevision"
         Effect = "Allow"
         Action = [
-          "ecs:DescribeTaskDefinition",
           "ecs:RegisterTaskDefinition",
           "ecs:TagResource"
         ]
         Resource = local.ecs_task_definition_arn
+      },
+      {
+        # ECS authorises DescribeTaskDefinition against the wildcard resource,
+        # not against the task definition ARN: a policy scoped to
+        # "task-definition/<project>-*" is rejected with AccessDenied.
+        # Verified against the live API, not only with the IAM simulator.
+        Sid      = "ReadTaskDefinition"
+        Effect   = "Allow"
+        Action   = ["ecs:DescribeTaskDefinition"]
+        Resource = "*"
       },
       {
         Sid      = "DescribeService"
