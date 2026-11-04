@@ -495,6 +495,10 @@ resource "aws_iam_role_policy" "github_actions_deploy_permissions" {
         Effect = "Allow"
         Action = [
           "codedeploy:CreateDeployment",
+          # CreateDeployment with an AppSpecContent revision also registers the
+          # revision, otherwise it fails with RegisterApplicationRevision denied.
+          "codedeploy:RegisterApplicationRevision",
+          "codedeploy:GetApplicationRevision",
           "codedeploy:GetDeployment",
           "codedeploy:GetDeploymentTarget",
           "codedeploy:GetDeploymentGroup",
