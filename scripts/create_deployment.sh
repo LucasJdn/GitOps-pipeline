@@ -34,18 +34,32 @@ EOF
 
 APPSPEC_SHA256=$(echo -n "${APPSPEC_CONTENT}" | sha256sum | awk '{print $1}')
 
+# The AppSpec travels inside the --revision JSON as an escaped string, so the
+# newlines must be encoded properly. python3 is used instead of jq because it is
+# guaranteed on every GitHub runner and has no extra install step locally.
+REVISION_JSON=$(APPSPEC_CONTENT="${APPSPEC_CONTENT}" APPSPEC_SHA256="${APPSPEC_SHA256}" python3 -c '
+import json, os
+print(json.dumps({
+    "revisionType": "AppSpecContent",
+    "appSpecContent": {
+        "content": os.environ["APPSPEC_CONTENT"],
+        "sha256": os.environ["APPSPEC_SHA256"],
+    },
+}))
+')
+
 echo "📦 Creating AWS CodeDeploy Deployment..."
-DEPLOYMENT_ID=$(aws codedeploy create-deployment \
+DEPLOYMENT_ID=$(aws deploy create-deployment \
   --application-name "${APP_NAME}" \
   --deployment-group-name "${DEPLOYMENT_GROUP}" \
   --deployment-config-name "CodeDeployDefault.ECSLinear10PercentEvery1Minutes" \
   --description "Triggered via GitOps Pipeline (commit: $(git rev-parse --short HEAD 2>/dev/null || echo 'ci'))" \
-  --revision "{\"revisionType\": \"AppSpecContent\", \"appSpecContent\": {\"content\": $(echo "${APPSPEC_CONTENT}" | jq -R -s .), \"sha256\": \"${APPSPEC_SHA256}\"}}" \
+  --revision "${REVISION_JSON}" \
   --query "deploymentId" \
   --output text)
 
 echo "✅ Deployment created successfully! Deployment ID: ${DEPLOYMENT_ID}"
 echo "⏳ Waiting for deployment to succeed..."
 
-aws codedeploy wait deployment-successful --deployment-id "${DEPLOYMENT_ID}"
+aws deploy wait deployment-successful --deployment-id "${DEPLOYMENT_ID}"
 echo "🎉 Deployment ${DEPLOYMENT_ID} completed successfully!"
