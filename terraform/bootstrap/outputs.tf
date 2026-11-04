@@ -9,6 +9,11 @@ output "terraform_lock_table" {
 }
 
 output "github_actions_role_arn" {
-  description = "ARN of the IAM role for GitHub Actions OIDC authentication"
+  description = "ARN of the IAM role used by the Terraform/CD image job (GitHub Actions OIDC)"
   value       = aws_iam_role.github_actions.arn
+}
+
+output "github_actions_deploy_role_arn" {
+  description = "ARN of the narrow IAM role used by the CodeDeploy blue/green job (GitHub Actions OIDC)"
+  value       = aws_iam_role.github_actions_deploy.arn
 }

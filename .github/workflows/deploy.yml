@@ -69,6 +69,11 @@ jobs:
     permissions:
       id-token: write
       contents: read
+    env:
+      # Fork pull requests must never receive AWS credentials: the plan phase
+      # executes Terraform configuration coming from the PR, which would then
+      # run with this role's permissions.
+      CAN_ASSUME_ROLE: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     outputs:
       image_uri: ${{ steps.build-image.outputs.image_uri }}
 
@@ -77,10 +82,24 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configure AWS Credentials (OIDC - Keyless)
+        if: env.CAN_ASSUME_ROLE == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+
+      # Backend names are derived from the account the role lives in, exactly
+      # like terraform/bootstrap names them. Keeping them out of the secrets
+      # removes a class of drift ("NoSuchBucket" after the bootstrap stack is
+      # recreated or renamed).
+      - name: Resolve Terraform Backend
+        if: env.CAN_ASSUME_ROLE == 'true'
+        id: backend
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "bucket=${PROJECT_NAME}-terraform-state-${ACCOUNT_ID}" >> "$GITHUB_OUTPUT"
+          echo "lock_table=${PROJECT_NAME}-terraform-lock" >> "$GITHUB_OUTPUT"
+          echo "Backend: s3://${PROJECT_NAME}-terraform-state-${ACCOUNT_ID} + ${PROJECT_NAME}-terraform-lock"
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -91,20 +110,29 @@ jobs:
         working-directory: terraform
         run: terraform fmt -check -recursive
 
+      # Fork PRs still get fmt/validate, just without touching the remote state.
+      - name: Terraform Init (local backend - fork PR)
+        if: env.CAN_ASSUME_ROLE != 'true'
+        working-directory: terraform
+        run: terraform init -backend=false -input=false
+
       - name: Terraform Init
+        if: env.CAN_ASSUME_ROLE == 'true'
         working-directory: terraform
         run: |
           terraform init \
-            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -input=false \
+            -backend-config="bucket=${{ steps.backend.outputs.bucket }}" \
             -backend-config="key=${{ env.ENVIRONMENT }}/terraform.tfstate" \
             -backend-config="region=${{ env.AWS_REGION }}" \
-            -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE }}"
+            -backend-config="dynamodb_table=${{ steps.backend.outputs.lock_table }}"
 
       - name: Terraform Validate
         working-directory: terraform
         run: terraform validate
 
       - name: Terraform Plan
+        if: env.CAN_ASSUME_ROLE == 'true'
         working-directory: terraform
         run: terraform plan -no-color
 
@@ -161,10 +189,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials (OIDC - Keyless)
+      - name: Configure AWS Credentials (OIDC - Keyless, deploy role)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          # Narrow role: can register a task definition revision and start a
+          # CodeDeploy deployment, nothing else (no infra, no IAM, no S3).
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       # describe-task-definition returns read-only fields that register-task-definition

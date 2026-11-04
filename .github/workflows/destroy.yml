@@ -26,10 +26,15 @@ jobs:
         working-directory: terraform
 
     steps:
+      # The input is untrusted text: it is passed through env and only ever
+      # expanded by the shell as a quoted variable, never interpolated into the
+      # script body (that would allow shell injection via the workflow input).
       - name: Validate Confirmation Input
+        env:
+          CONFIRMATION: ${{ github.event.inputs.confirmation }}
         run: |
-          if [ "${{ github.event.inputs.confirmation }}" != "DESTROY-PRODUCTION" ]; then
-            echo "❌ Confirmation failed. Expected 'DESTROY-PRODUCTION' but received '${{ github.event.inputs.confirmation }}'."
+          if [ "$CONFIRMATION" != "DESTROY-PRODUCTION" ]; then
+            echo "❌ Confirmation failed. Expected 'DESTROY-PRODUCTION' but received: ${CONFIRMATION}"
             exit 1
           fi
           echo "⚠️ Confirmation verified. Proceeding with teardown..."
@@ -42,7 +47,15 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          audience: sts.amazonaws.com
+
+      # Same derivation as deploy.yml: the backend names come from the account
+      # the role lives in, so a recreated bootstrap stack cannot break init.
+      - name: Resolve Terraform Backend
+        id: backend
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "bucket=${PROJECT_NAME}-terraform-state-${ACCOUNT_ID}" >> "$GITHUB_OUTPUT"
+          echo "lock_table=${PROJECT_NAME}-terraform-lock" >> "$GITHUB_OUTPUT"
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -52,10 +65,11 @@ jobs:
       - name: Terraform Init
         run: |
           terraform init \
-            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -input=false \
+            -backend-config="bucket=${{ steps.backend.outputs.bucket }}" \
             -backend-config="key=${{ env.ENVIRONMENT }}/terraform.tfstate" \
             -backend-config="region=${{ env.AWS_REGION }}" \
-            -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE }}"
+            -backend-config="dynamodb_table=${{ steps.backend.outputs.lock_table }}"
 
       - name: Terraform Destroy
         run: terraform destroy -auto-approve
